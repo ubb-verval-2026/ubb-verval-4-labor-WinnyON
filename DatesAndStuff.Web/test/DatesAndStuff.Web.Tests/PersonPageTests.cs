@@ -34,7 +34,8 @@ public class PersonPageTests
         {
             FileName = "dotnet",
             //Arguments = $"run --project \"{webProjectPath}\"",
-            Arguments = "dotnet run --no-build",
+            // Arguments = "dotnet run --no-build",
+            Arguments = "run",
             WorkingDirectory = webProjFolderPath,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
@@ -97,8 +98,10 @@ public class PersonPageTests
         Assert.That(verificationErrors.ToString(), Is.EqualTo(""));
     }
 
-    [Test]
-    public void Person_SalaryIncrease_ShouldIncrease()
+    [TestCase(5, 5250)]
+    [TestCase(10, 5500)]
+    [TestCase(100, 10000)]
+    public void  Person_SalaryIncrease_ShouldIncrease(double percentage, double expectedSalary)
     {
         // Arrange
         driver.Navigate().GoToUrl(BaseURL);
@@ -106,9 +109,23 @@ public class PersonPageTests
 
         var wait = new WebDriverWait(driver, TimeSpan.FromSeconds(5));
 
-        var input = wait.Until(ExpectedConditions.ElementExists(By.XPath("//*[@data-test='SalaryIncreasePercentageInput']")));
-        input.Clear();
-        input.SendKeys("5");
+        // var input = wait.Until(ExpectedConditions.ElementExists(By.XPath("//*[@data-test='SalaryIncreasePercentageInput']")));
+        // input.Clear();
+        // input.SendKeys(percentage.ToString());
+        wait.Until(d =>
+        {
+            try
+            {
+                var el = d.FindElement(By.XPath("//*[@data-test='SalaryIncreasePercentageInput']"));
+                el.Clear();
+                el.SendKeys(percentage.ToString());
+                return true;
+            }
+            catch (Exception ex) when (ex is StaleElementReferenceException || ex is ElementNotInteractableException || ex is NoSuchElementException)
+            {
+                return false;
+            }
+        });
 
         // Act
         var submitButton = wait.Until(ExpectedConditions.ElementExists(By.XPath("//*[@data-test='SalaryIncreaseSubmitButton']")));
@@ -118,7 +135,7 @@ public class PersonPageTests
         // Assert
         var salaryLabel = wait.Until(ExpectedConditions.ElementExists(By.XPath("//*[@data-test='DisplayedSalary']")));
         var salaryAfterSubmission = double.Parse(salaryLabel.Text);
-        salaryAfterSubmission.Should().BeApproximately(5250, 0.001);
+        salaryAfterSubmission.Should().BeApproximately(expectedSalary, 0.001);
     }
     private bool IsElementPresent(By by)
     {
