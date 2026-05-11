@@ -60,6 +60,35 @@ namespace DatesAndStuff.Web.Tests
             
             var rows = driver.FindElements(By.CssSelector("table.table tbody tr"));
             rows.Count.Should().BeGreaterThanOrEqualTo(3, "There has to be at least 3 flights between Mexico City and Dublin.");
+            
+            // bonus
+            double priceLimit = 500.0;
+            bool foundCheapFlight = false;
+
+            foreach (var row in rows)
+            {
+                var priceText = row.FindElement(By.CssSelector("td:nth-child(7)")).Text;
+                priceText = priceText.Replace("$", "").Trim();
+
+                if (double.TryParse(priceText, System.Globalization.CultureInfo.InvariantCulture, out double price))
+                {
+                    if (price < priceLimit)
+                    {
+                        foundCheapFlight = true;
+                        break;
+                    }
+                }
+            }
+
+            if (foundCheapFlight)
+            {
+                var screenshot = ((ITakesScreenshot)driver).GetScreenshot();
+                string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+                string filePath = Path.Combine(desktopPath, "cheap_flight_blazedemo.png");
+                screenshot.SaveAsFile(filePath);
+            
+                Console.WriteLine($"Found cheap flight, screenshot saved at: {filePath}");
+            }
         }
         private bool IsElementPresent(By by)
         {
