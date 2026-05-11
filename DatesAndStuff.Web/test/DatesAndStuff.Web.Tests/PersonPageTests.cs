@@ -137,6 +137,43 @@ public class PersonPageTests
         var salaryAfterSubmission = double.Parse(salaryLabel.Text);
         salaryAfterSubmission.Should().BeApproximately(expectedSalary, 0.001);
     }
+
+    [Test]
+    public void Person_SalaryIncrease_WithLessThanMinus10_ShouldShowErrors()
+    {
+        // Arrange
+        driver.Navigate().GoToUrl(BaseURL);
+        driver.FindElement(By.XPath("//*[@data-test='PersonPageNavigation']")).Click();
+
+        var wait = new WebDriverWait(driver, TimeSpan.FromSeconds(5));
+
+        wait.Until(d =>
+        {
+            try
+            {
+                var el = d.FindElement(By.XPath("//*[@data-test='SalaryIncreasePercentageInput']"));
+                el.Clear();
+                el.SendKeys("-15");
+                return true;
+            }
+            catch (Exception ex) when (ex is StaleElementReferenceException || ex is ElementNotInteractableException || ex is NoSuchElementException)
+            {
+                return false;
+            }
+        });
+
+        // Act
+        var submitButton = wait.Until(ExpectedConditions.ElementExists(By.XPath("//*[@data-test='SalaryIncreaseSubmitButton']")));
+        submitButton.Click();
+
+        // Assert
+        var validationSummary = wait.Until(ExpectedConditions.ElementExists(By.XPath("/html/body/div[1]/main/article/form/ul")));
+        validationSummary.Text.Should().Contain("The specified percentag should be between -10 and infinity.");
+
+        var validationMessage = wait.Until(ExpectedConditions.ElementExists(By.XPath("/html/body/div[1]/main/article/form/div[2]/div/div")));
+        validationMessage.Text.Should().Contain("The specified percentag should be between -10 and infinity.");
+    }
+
     private bool IsElementPresent(By by)
     {
         try
